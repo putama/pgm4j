@@ -34,6 +34,13 @@ public class SimpleTrigramHMM {
         simpleTrigram.estimateParameters();
 
         // MAP for decoding
+        ArrayList<Integer> res = simpleTrigram.viterbiDecoding(simpleTrigram.valWords.get(0));
+
+        for (Integer tag : res) {
+            System.out.print(simpleTrigram.tagdictRev.get(tag) + ", ");
+        }
+
+        System.out.println();
     }
 
     public SimpleTrigramHMM(String trainPath, String testPath) {
@@ -58,8 +65,8 @@ public class SimpleTrigramHMM {
         valTags = new ArrayList<ArrayList<Integer>>();
         util.tokenize(testPath, valWords, valTags, worddict, tagdict, 2);
 
-        ArrayList<ArrayList<Integer>> batchPreds = batchViterbiDecoding(valWords);
-        double score = evaluatePrediction(batchPreds);
+        //ArrayList<ArrayList<Integer>> batchPreds = batchViterbiDecoding(valWords);
+        //double score = evaluatePrediction(batchPreds);
     }
 
     public ArrayList<ArrayList<Integer>> batchViterbiDecoding(ArrayList<ArrayList<Integer>> testBatch) {
@@ -67,6 +74,7 @@ public class SimpleTrigramHMM {
 
         for (int i = 0; i < testBatch.size(); i++) {
             ArrayList<Integer> preds = viterbiDecoding(testBatch.get(i));
+            batchPreds.add(preds);
         }
 
         return batchPreds;
@@ -75,18 +83,57 @@ public class SimpleTrigramHMM {
     public ArrayList<Integer> viterbiDecoding(ArrayList<Integer> testLine) {
         ArrayList<Integer> preds = new ArrayList<Integer>();
 
-        double [][] table = new double[tagdict.size()][testLine.size()-2]; // ignore the first 2 *START* token
+        double [][] table = new double[tagdict.size()][testLine.size()];
+        int [] maxIds = new int[testLine.size()];
 
+        for (int i = 0; i < table.length; i++) {
+            for (int j = 0; j < table[i].length; j++) {
+                table[i][j] = -Double.MAX_VALUE;
+            }
+        }
+
+        maxIds[0] = tagdict.get("*START*");
+        maxIds[1] = tagdict.get("*START*");
+
+        // the table is indexed by i & j
+        // base case: the first two tokens should be definitely *START*
+        // hence prob *START* = 1
+        table[tagdict.get("*START*")][0] = Math.log(1.0);
+        table[tagdict.get("*START*")][1] = Math.log(1.0);
+        // start iterate table from column 2
         for (int i = 2; i < testLine.size(); i++) {
+            int curMaxId = -1;
             for (int j = 0; j < tagdict.size(); j++) {
-                // base case: the first token of the line
-                if (i - 2 == 0) {
-                    
-                }
+                if (qParams[j][maxIds[i-2]][maxIds[i-1]] == 0) continue;
+
+                // e(x_i|y_i) * q(y_i|y_i-1, y_i-2) * max_prev
+                double prevMaxProb = table[maxIds[i-1]][i-1];
+                table[j][i] = Math.log(eParams[testLine.get(i)][j]) +
+                        Math.log(qParams[j][maxIds[i-2]][maxIds[i-1]]) +
+                        prevMaxProb;
+            }
+            curMaxId = findMaxOfColumn(table, i);
+            maxIds[i] = curMaxId;
+
+            if (i >= 2) {
+                preds.add(curMaxId);
             }
         }
 
         return preds;
+    }
+
+    public int findMaxOfColumn(double [][] table, int col) {
+        double max = -Double.MAX_VALUE;
+        int maxIdx = -1;
+        for (int i = 0; i < table.length; i++) {
+            double cur = table[i][col];
+            if (cur > max) {
+                max = cur;
+                maxIdx = i;
+            }
+        }
+        return maxIdx;
     }
 
     public double evaluatePrediction(ArrayList<ArrayList<Integer>> batchPredictions) {
