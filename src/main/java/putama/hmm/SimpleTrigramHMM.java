@@ -1,6 +1,8 @@
 package putama.hmm;
 
 import putama.util.DataUtil;
+import putama.util.EvaluationUtil;
+
 import java.util.*;
 
 /**
@@ -32,15 +34,14 @@ public class SimpleTrigramHMM {
 
         // estimate parameters
         simpleTrigram.estimateParameters();
+        simpleTrigram.isValidProbDistribution();
 
         // MAP for decoding
-        ArrayList<Integer> res = simpleTrigram.viterbiDecoding(simpleTrigram.valWords.get(0));
+        ArrayList<ArrayList<Integer>> batchPreds = simpleTrigram.batchViterbiDecoding(simpleTrigram.valWords);
 
-        for (Integer tag : res) {
-            System.out.print(simpleTrigram.tagdictRev.get(tag) + ", ");
-        }
-
-        System.out.println();
+        // evaluate: compute the accuracy of individual tag prediction
+        EvaluationUtil.printPosTagsPredictions(simpleTrigram.valTags, batchPreds, simpleTrigram.tagdictRev);
+        EvaluationUtil.evaluatePosTags(simpleTrigram.valTags, batchPreds);
     }
 
     public SimpleTrigramHMM(String trainPath, String testPath) {
@@ -100,6 +101,8 @@ public class SimpleTrigramHMM {
         // hence prob *START* = 1
         table[tagdict.get("*START*")][0] = Math.log(1.0);
         table[tagdict.get("*START*")][1] = Math.log(1.0);
+        preds.add(tagdict.get("*START*"));
+        preds.add(tagdict.get("*START*"));
         // start iterate table from column 2
         for (int i = 2; i < testLine.size(); i++) {
             int curMaxId = -1;
@@ -115,9 +118,7 @@ public class SimpleTrigramHMM {
             curMaxId = findMaxOfColumn(table, i);
             maxIds[i] = curMaxId;
 
-            if (i >= 2) {
-                preds.add(curMaxId);
-            }
+            preds.add(curMaxId);
         }
 
         return preds;
