@@ -10,22 +10,28 @@ import java.util.ArrayList;
 public class FactorNode extends Node {
     public INDArray factors;
 
-    public FactorNode(String name, INDArray factors, ArrayList<VariableNode> neighbors) {
+    public FactorNode(String name, INDArray factors, VariableNode [] neighbors) {
         super(name);
 
+        int [] shape = factors.shape();
+        // case when factors is a vector
+        if (factors.shape().length==2 & factors.shape()[0]==1){
+            shape = new int[] {factors.length()};
+        }
+
         // factors shape assertion
-        int dim = factors.shape().length;
-        if (neighbors.size() != dim) {
+        int dim = shape.length;
+        if (neighbors.length != dim) {
             throw new IllegalArgumentException("factors shape should be matched with the number of neighbors");
         }
 
         // ndarray size assertion
-        for (int i = 0; i < neighbors.size(); i++) {
-            if (((VariableNode) neighbors.get(i)).statesNum != factors.shape()[i]) {
+        for (int i = 0; i < neighbors.length; i++) {
+            if (((VariableNode) neighbors[i]).statesNum != shape[i]) {
                 throw new IllegalArgumentException("factors shape should be matched with variable number of state");
             }
 
-            this.addNeighbor(neighbors.get(i));
+            this.addNeighbor(neighbors[i]);
         }
 
         this.factors = factors;

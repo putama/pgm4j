@@ -56,7 +56,7 @@ public abstract class Node implements Comparable<Node> {
             } else {
                 // alternate condition when the node received
                 // messages from all of its neighbors
-                // this happens to root node
+                // this happens to root node during belief prop
                 if (neighbors.size() == messages.size()) {
                     pendings.add(neighbor);
                 }
@@ -64,8 +64,29 @@ public abstract class Node implements Comparable<Node> {
         }
     }
 
-    public INDArray getMessages(Node node) {
-        return null;
+    public ArrayList<INDArray> getMessages(Node otherNode) throws Exception {
+        // explicitly retrieve the value of the messages
+        // from neighbors except from node other
+        ArrayList<INDArray> messagesList = new ArrayList<INDArray>();
+        for (Node neighbor : neighbors) {
+            // iterate trough all neighbors except otherNode
+            if (neighbor == otherNode) {
+                continue;
+            }
+            if (messages.containsKey(neighbor)){
+                messagesList.add(messages.get(neighbor));
+            } else {
+                throw new Exception("Missing messages from node: " + neighbor.toString());
+            }
+        }
+        return messagesList;
+    }
+
+    public void passMessage(Node otherNode, INDArray message) {
+        // explicitly pass the message from this node
+        // to the other node
+        otherNode.receiveMessage(this, message);
+        this.pendings.remove(otherNode);
     }
 
     public abstract void sendSumProductMessage(Node otherNode);
@@ -77,5 +98,10 @@ public abstract class Node implements Comparable<Node> {
             return 0;
         }
         return -1;
+    }
+
+    @Override
+    public String toString() {
+        return this.name;
     }
 }

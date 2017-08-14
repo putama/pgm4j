@@ -15,14 +15,48 @@ public class FactorGraph {
 
     public static void main(String [] args) {
         FactorGraph graph = new FactorGraph();
-        VariableNode node1 = new VariableNode("P", 2);
-        VariableNode node2 = new VariableNode("S", 2);
+        VariableNode I = new VariableNode("Influenza", 2);
+        VariableNode S = new VariableNode("Smokes", 2);
+        VariableNode ST = new VariableNode("Sore Throat", 2);
+        VariableNode F = new VariableNode("Fever", 2);
+        VariableNode B = new VariableNode("Bronchitis", 2);
+        VariableNode C = new VariableNode("Coughing", 2);
+        VariableNode W = new VariableNode("Wheezing", 2);
 
-        graph.addNode(node1);
-        graph.addNode(node2);
-
-        INDArray a = Nd4j.zeros(3,3,3);
-        System.out.println(a.shape()[0]);
+        FactorNode F_I = new FactorNode(
+                "F_I",
+                Nd4j.create(new double[] {0.95, 0.05}),
+                new VariableNode[] {I}
+        );
+        FactorNode F_S = new FactorNode(
+                "F_S",
+                Nd4j.create(new double[] {0.8, 0.2}),
+                new VariableNode[] {S}
+        );
+        FactorNode F_IST = new FactorNode(
+                "F_IST",
+                Nd4j.create(new double[][] {{0.999, 0.001}, {0.7, 0.3}}),
+                new VariableNode[] {I, ST}
+        );
+        FactorNode F_IF = new FactorNode(
+                "F_IF",
+                Nd4j.create(new double[][] {{0.1, 0.9}, {0.95, 0.05}}),
+                new VariableNode[] {I, F}
+        );
+        FactorNode F_ISB = new FactorNode(
+                "F_ISB",
+                Nd4j.create(
+                        new double[] {0.999,0.001,0.3,0.7,0.1,0.9,0.01,0.99},
+                        new int[] {2,2,2}
+                ),
+                new VariableNode[] {I, S, B}
+        );
+        FactorNode F_BC = new FactorNode(
+                "F_BC",
+                Nd4j.create(new double[][] {{0.999, 0.001}, {0.7, 0.3}}),
+                new VariableNode[] {I, ST}
+        );
+        graph.addNodes(I, S, ST, F, B, C, W);
     }
 
     public FactorGraph() {
@@ -31,5 +65,11 @@ public class FactorGraph {
 
     public void addNode(Node newNode) {
         this.allNodes.add(newNode);
+    }
+
+    public void addNodes(Node... newNodes) {
+        for (Node newNode : newNodes) {
+            addNode(newNode);
+        }
     }
 }
