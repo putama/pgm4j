@@ -1,9 +1,11 @@
 package putama.corePGM.factorGraph.structure;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.Dot;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.TreeSet;
 
@@ -57,7 +59,23 @@ public class FactorGraph {
                 new VariableNode[] {I, ST}
         );
         graph.addNodes(I, S, ST, F, B, C, W);
+        graph.addNodes(F_I, F_S, F_IST, F_IF, F_ISB, F_BC);
+
+        F_ISB.reset();
+        F_ISB.receiveMessage(I, Nd4j.create(new double[] {1, 2}));
+        F_ISB.receiveMessage(B, Nd4j.create(new double[] {1, 2}));
+        F_ISB.sendSumProductMessage(S);
     }
+
+    public static double [] toPrimitive(ArrayList<Double> arr) {
+        double [] ret = new double[arr.size()];
+        for (int i = 0; i < arr.size(); i++) {
+            ret[i] = arr.get(i);
+        }
+        return ret;
+    }
+
+
 
     public FactorGraph() {
         allNodes = new TreeSet<Node>();

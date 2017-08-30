@@ -65,4 +65,8 @@ public class VariableNode extends Node {
     public float getMarginal(float Z) {
         return 0;
     }
+
+    public String getNodeType(){
+        return "VARIABLE";
+    }
 }

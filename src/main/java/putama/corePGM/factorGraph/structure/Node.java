@@ -4,6 +4,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -18,6 +19,7 @@ public abstract class Node implements Comparable<Node> {
     public HashSet<Node> pendings;
     // tables that contain messages retrieved from neighbors
     public HashMap<Node, INDArray> messages;
+    public abstract String getNodeType();
 
     public Node(String name) {
         this.name = name;
@@ -87,6 +89,47 @@ public abstract class Node implements Comparable<Node> {
         // to the other node
         otherNode.receiveMessage(this, message);
         this.pendings.remove(otherNode);
+    }
+
+    public double [] allMessagesProduct() {
+        ArrayList<INDArray> messageList = new ArrayList<>();
+        // iterate neighbors to get the corresponding messages
+        for (Node neighbor : neighbors) {
+            if (messages.containsKey(neighbor)) {
+                messageList.add(messages.get(neighbor));
+            }
+        }
+
+        double initVal = 1.0;
+        ArrayList<Double> productsList = new ArrayList<>();
+        productRecursiveHelper(initVal, messageList, productsList);
+        double [] products = new double[productsList.size()];
+        for (int i = 0; i < products.length; i++) {
+            products[i] = productsList.get(i);
+        }
+        return products;
+    }
+
+    /**
+     * Recursive function to compute all possible products
+     * @param messagesLeft
+     * @param products
+     */
+    public static void productRecursiveHelper(double accum, ArrayList<INDArray> messagesLeft,
+                                              ArrayList<Double> products){
+        if (messagesLeft.size() == 0) {
+            products.add(accum);
+            return;
+        }
+
+        ArrayList<INDArray> messagesSlice = new ArrayList<>();
+        if (messagesLeft.size() > 1) {
+            messagesSlice.addAll(messagesLeft.subList(1, messagesLeft.size()));
+        }
+
+        for (int i = 0; i < messagesLeft.get(0).length(); i++) {
+            productRecursiveHelper(accum * messagesLeft.get(0).getDouble(i), messagesSlice, products);
+        }
     }
 
     public abstract void sendSumProductMessage(Node otherNode);
