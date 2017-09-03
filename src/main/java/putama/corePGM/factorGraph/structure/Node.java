@@ -19,6 +19,7 @@ public abstract class Node implements Comparable<Node> {
     public HashSet<Node> pendings;
     // tables that contain messages retrieved from neighbors
     public HashMap<Node, INDArray> messages;
+
     public abstract String getNodeType();
 
     public Node(String name) {

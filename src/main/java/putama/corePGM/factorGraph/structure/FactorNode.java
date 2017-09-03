@@ -33,6 +33,7 @@ public class FactorNode extends Node {
             }
 
             this.addNeighbor(neighbors[i]);
+            neighbors[i].addNeighbor(this);
         }
 
         this.factors = factors;
@@ -50,6 +51,10 @@ public class FactorNode extends Node {
         if (neighbors.size() == 1) {
             Nd4j.copy(factors, nodeMessage);
         } else {
+            if (!pendings.contains(otherNode)) {
+                throw new IllegalArgumentException("incomplete received messages");
+            }
+
             double [] messagesProduct = allMessagesProduct();
             int dim = neighbors.indexOf(otherNode);
             int dimSize = factors.shape()[dim];
@@ -59,7 +64,11 @@ public class FactorNode extends Node {
                         .mmul(Nd4j.create(messagesProduct, new int [] {messagesProduct.length, 1}))
                         .getDouble(0);
             }
+
+            // make otherNode receive the message
+            nodeMessage = Nd4j.create(toSend);
         }
+        this.passMessage(otherNode, nodeMessage);
     }
 
     public void sendMaxSumMessage(Node otherNode) {

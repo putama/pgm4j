@@ -1,5 +1,8 @@
 package putama.corePGM.factorGraph.structure;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+
 import java.util.ArrayList;
 
 /**
@@ -15,6 +18,7 @@ public class VariableNode extends Node {
         super(name);
         this.statesNum = statesNum;
         this.isStateObserved = new double[this.statesNum];
+        this.setVariableLatent();
     }
 
     /**
@@ -49,7 +53,31 @@ public class VariableNode extends Node {
 
     @Override
     public void sendSumProductMessage(Node otherNode) {
+        if (otherNode.getNodeType().equals("VARIABLE")) {
+            throw new IllegalArgumentException("factor can only send message to variable");
+        }
+        if (!neighbors.contains(otherNode)) {
+            throw new IllegalArgumentException("other node should be in neighbors");
+        }
 
+        INDArray nodeMessage = Nd4j.ones(this.statesNum);
+
+        // observed variable would have a single non-zero element in message vector
+        nodeMessage = nodeMessage.mul(Nd4j.create(isStateObserved));
+
+        if (neighbors.size() > 1) {
+            if (!pendings.contains(otherNode)) {
+                throw new IllegalArgumentException("incomplete received messages");
+            }
+
+            for (Node neighbor : neighbors) {
+                if (messages.containsKey(neighbor)) {
+                    nodeMessage = nodeMessage.mul(messages.get(neighbor));
+                }
+            }
+        }
+
+        this.passMessage(otherNode, nodeMessage);
     }
 
     @Override
@@ -59,11 +87,22 @@ public class VariableNode extends Node {
 
     /**
      * get the marginal probability of the variable node
-     * @param Z: normalization constant
      * @return
      */
-    public float getMarginal(float Z) {
-        return 0;
+    public INDArray getMarginal() {
+        // almost similar implementation with computing messages
+        // except that the product should be normalized
+        INDArray nodeMessage = Nd4j.ones(this.statesNum);
+        // observed variable would have a single non-zero element in message vector
+        nodeMessage = nodeMessage.mul(Nd4j.create(isStateObserved));
+        for (Node neighbor : neighbors) {
+            if (messages.containsKey(neighbor)) {
+                nodeMessage = nodeMessage.mul(messages.get(neighbor));
+            }
+        }
+        // compute normalizing constant
+        double Z = nodeMessage.sumNumber().doubleValue();
+        return nodeMessage.div(Z);
     }
 
     public String getNodeType(){

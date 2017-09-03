@@ -55,27 +55,32 @@ public class FactorGraph {
         );
         FactorNode F_BC = new FactorNode(
                 "F_BC",
-                Nd4j.create(new double[][] {{0.999, 0.001}, {0.7, 0.3}}),
-                new VariableNode[] {I, ST}
+                Nd4j.create(new double[][] {{0.93, 0.07}, {0.2, 0.8}}),
+                new VariableNode[] {B, C}
         );
+        FactorNode F_BW = new FactorNode(
+                "F_BW",
+                Nd4j.create(new double[][] {{0.999, 0.001}, {0.4, 0.6}}),
+                new VariableNode[] {B, C}
+        );
+
+
         graph.addNodes(I, S, ST, F, B, C, W);
-        graph.addNodes(F_I, F_S, F_IST, F_IF, F_ISB, F_BC);
+        graph.addNodes(F_I, F_S, F_IST, F_IF, F_ISB, F_BC, F_BW);
 
-        F_ISB.reset();
-        F_ISB.receiveMessage(I, Nd4j.create(new double[] {1, 2}));
-        F_ISB.receiveMessage(B, Nd4j.create(new double[] {1, 2}));
-        F_ISB.sendSumProductMessage(S);
+//        F_ISB.reset();
+//        F_ISB.receiveMessage(I, Nd4j.create(new double[] {1, 2}));
+//        F_ISB.receiveMessage(B, Nd4j.create(new double[] {1, 2}));
+//        F_ISB.sendSumProductMessage(S);
+
+        I.reset();
+        I.receiveMessage(F_IST, Nd4j.create(new double [] {1, 2}));
+        I.receiveMessage(F_IF, Nd4j.create(new double [] {1, 2}));
+        I.receiveMessage(F_I, Nd4j.create(new double [] {1, 2}));
+        I.sendSumProductMessage(F_ISB);
+
+        System.out.println();
     }
-
-    public static double [] toPrimitive(ArrayList<Double> arr) {
-        double [] ret = new double[arr.size()];
-        for (int i = 0; i < arr.size(); i++) {
-            ret[i] = arr.get(i);
-        }
-        return ret;
-    }
-
-
 
     public FactorGraph() {
         allNodes = new TreeSet<Node>();
@@ -88,6 +93,12 @@ public class FactorGraph {
     public void addNodes(Node... newNodes) {
         for (Node newNode : newNodes) {
             addNode(newNode);
+        }
+    }
+
+    public void resetGraph() {
+        for (Node node : allNodes) {
+            node.reset();
         }
     }
 }
